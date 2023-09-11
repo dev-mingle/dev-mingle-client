@@ -1,4 +1,5 @@
 import 'package:dev_community/di.dart';
+import 'package:dev_community/domain/repository/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,13 +12,14 @@ void main() async {
   // env load
   bool isDevelop = const bool.fromEnvironment('isDevelop', defaultValue: true);
   if (isDevelop) {
-    await dotenv.load(fileName: '.env.develop');
+    await dotenv.load(fileName: '.env.mock');
   } else {
     await dotenv.load(fileName: '.env');
   }
 
   setupDi();
 
+  di<AuthRepository>().login(email: "email@domain.com", password: "password");
   runApp(const ProviderScope(child: MyApp()));
 }
 

@@ -1,9 +1,13 @@
-import 'package:dev_community/di.dart';
+import 'package:dev_community/network/models/base_response_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../const/api_endpoint.dart';
-import 'api.dart';
+import '../../data/api/auth_api.dart';
+import '../../di.dart';
+import '../../network/dto/users/auth/token_refresh_req_dto.dart';
+import '../../network/models/auth/token_response_model.dart';
 
 class ApiTokenInterceptor extends InterceptorsWrapper {
   static const String keyAToken = "aToken";
@@ -29,11 +33,19 @@ class ApiTokenInterceptor extends InterceptorsWrapper {
       return handler.next(err);
     }
     const storage = FlutterSecureStorage();
-    final String? aToken = await storage.read(key: keyAToken);
+    // final String? aToken = await storage.read(key: keyAToken);
     final String? rToken = await storage.read(key: keyRToken);
     try {
-      final api = di<Api>();
-      // TODO AuthApi
+      final api = di<AuthApi>();
+      await api.getNewToken(TokenRefreshReqDto(refreshToken: rToken!));
+      final dio = Dio();
+      if (kDebugMode) {
+        dio.interceptors.add(
+          LogInterceptor(responseBody: true, responseHeader: true),
+        );
+      }
+      final response = await dio.fetch(err.requestOptions);
+      return handler.resolve(response);
     } catch (e) {
       storage.delete(key: keyAToken);
       storage.delete(key: keyRToken);
@@ -46,7 +58,11 @@ class ApiTokenInterceptor extends InterceptorsWrapper {
     if (response.requestOptions.path == ApiEndPoint.signin ||
         response.requestOptions.path == ApiEndPoint.refresh) {
       const storage = FlutterSecureStorage();
-      // TODO Token Parsing
+      final TokenResponseModel result =
+          TokenResponseModel.fromJson(response.data);
+      await storage.write(key: keyAToken, value: result.accessToken);
+      await storage.write(key: keyRToken, value: result.refreshToken);
     }
+    return handler.next(response);
   }
 }

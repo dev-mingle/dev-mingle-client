@@ -1,3 +1,4 @@
+import 'package:dev_community/core/dio/api_token_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -12,6 +13,7 @@ class Api {
       baseUrl: dotenv.get('BASE_URL'),
     );
     dio.interceptors.clear();
+    dio.interceptors.add(ApiTokenInterceptor());
     if (kDebugMode) {
       dio.interceptors.add(LogInterceptor(
         request: true,
